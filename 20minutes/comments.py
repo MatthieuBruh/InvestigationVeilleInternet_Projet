@@ -2,13 +2,10 @@ import hashlib
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.service import Service
 from selenium.webdriver.common.by import By
 from typing import List, Tuple
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    StaleElementReferenceException,
-    WebDriverException
-)
+from selenium.common.exceptions import (NoSuchElementException, StaleElementReferenceException, WebDriverException)
 
 def hash_md5(data):
     return hashlib.md5(data.encode('utf-8')).hexdigest()
@@ -183,7 +180,9 @@ def setup():
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    driver = webdriver.Chrome(options=options)
+    service = Service("/usr/bin/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
+    # driver = webdriver.Chrome(options=options)
     return driver
 
 def scrap_comments(art_id, art_comments_url):
