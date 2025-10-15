@@ -90,7 +90,7 @@ def setup():
     options.add_argument("--disable-dev-shm-usage")
     service = Service("/usr/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
-    driver = webdriver.Chrome(options=options)
+    # driver = webdriver.Chrome(options=options)
     return driver
 
 def scrap_article(article_url):
