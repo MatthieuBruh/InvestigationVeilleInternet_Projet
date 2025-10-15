@@ -1,12 +1,13 @@
+import time
+
+import requests
 from selenium import webdriver
 from selenium.common import WebDriverException
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.service import Service
 from selenium.webdriver.common.by import By
+
 from comments import scrap_comments
 from dbConfig import get_connection
-import time
-import requests
+from utils import normalize_date, get_driver_requirements
 
 
 def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_url, art_commentaires_actifs):
@@ -16,14 +17,13 @@ def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_u
         art_nom_journal = "20minutes"
         cursor.execute("""
                        INSERT IGNORE INTO UNIL_Article (art_id, art_titre, art_url, art_categorie,art_date, art_commentaires_actifs, art_nom_journal)
-                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, art_date, art_commentaires_actifs, art_nom_journal))
+                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, normalize_date(art_date), art_commentaires_actifs, art_nom_journal))
         conn.commit()
     except Exception as e:
         exit(2)
     finally:
         cursor.close()
         conn.close()
-
 
 def get_id(art_url):
     return art_url.strip().split("-")[-1]
@@ -83,23 +83,17 @@ def load_page(dr, art_url):
         return False
 
 def setup():
-    # Options du navigateur (sans interface graphique)
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    service = Service("/usr/bin/chromedriver")
-    driver = webdriver.Chrome(service=service, options=options)
+    rqts = get_driver_requirements()
+    driver = webdriver.Chrome(service=rqts[1], options=rqts[0])
     # driver = webdriver.Chrome(options=options)
     return driver
 
 def scrap_article(article_url):
     driver = setup()
-    driver.get(article_url)
-    time.sleep(5)
+    load_page(driver, article_url)
     process_data(article_url, driver)
-    if has_comments_section(article_url):
-        scrap_comments(get_id(article_url), get_url_comments(article_url))
+    # if has_comments_section(article_url):
+        # scrap_comments(get_id(article_url), get_url_comments(article_url))
     driver.quit()
 
 if __name__ == '__main__':

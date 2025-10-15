@@ -1,0 +1,45 @@
+import datetime
+import hashlib
+import time
+from typing import Tuple
+
+from selenium.common import WebDriverException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+
+
+def normalize_date(art_date):
+    if not art_date:
+        return None
+    try:
+        dt = datetime.fromisoformat(art_date.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return None
+
+def hash_md5(data):
+    return hashlib.md5(data.encode('utf-8')).hexdigest()
+
+def load_page(dr, url):
+    try:
+        dr.get(url)
+        time.sleep(5)
+        return True
+    except WebDriverException as e:
+        return False
+
+def get_driver_requirements() ->Tuple[Options, Service]:
+    options = Options()
+    # options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+    service = Service("/usr/bin/chromedriver")
+    return options, service

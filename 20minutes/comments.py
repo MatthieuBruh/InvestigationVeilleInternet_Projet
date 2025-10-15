@@ -1,14 +1,10 @@
-import hashlib
 import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.service import Service
-from selenium.webdriver.common.by import By
 from typing import List, Tuple
+from selenium import webdriver
 from selenium.common.exceptions import (NoSuchElementException, StaleElementReferenceException, WebDriverException)
+from selenium.webdriver.common.by import By
+from utils import hash_md5, get_driver_requirements, load_page
 
-def hash_md5(data):
-    return hashlib.md5(data.encode('utf-8')).hexdigest()
 
 def save_answer(art_id, com_id, com_author, com_content, com_ref_id):
     # TODO : to complete
@@ -159,29 +155,9 @@ def load_all_articles(dr, max_attempts: int = 200,scroll_pause: float = 2.0):
         print(f"Erreur lors du scroll: {e}")
         return previous_count
 
-def load_page(dr, comments_url):
-    try:
-        dr.get(comments_url)
-        time.sleep(5)
-        return True
-    except WebDriverException as e:
-        return False
-
 def setup():
-    options = Options()
-    # options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    )
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
-    service = Service("/usr/bin/chromedriver")
-    driver = webdriver.Chrome(service=service, options=options)
+    rqts = get_driver_requirements()
+    driver = webdriver.Chrome(service=rqts[1], options=rqts[0])
     # driver = webdriver.Chrome(options=options)
     return driver
 
