@@ -16,7 +16,7 @@ def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_u
         art_nom_journal = "20minutes"
         cursor.execute("""
                        INSERT IGNORE INTO UNIL_Article (art_id, art_titre, art_url, art_categorie,art_date, art_commentaires_actifs, art_nom_journal)
-                       VALUES (?, ?, ?, ?, ?, ?, ?);""",(art_id, art_titre, art_url, art_categorie, art_date, art_commentaires_actifs, art_nom_journal))
+                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, art_date, art_commentaires_actifs, art_nom_journal))
         conn.commit()
     except Exception as e:
         exit(2)
@@ -103,4 +103,4 @@ def scrap_article(article_url):
     driver.quit()
 
 if __name__ == '__main__':
-    scrap_article("https://www.20min.ch/fr/story/canton-de-fribourg-villa-en-feu-les-habitants-arrivent-a-echapper-aux-flammes-103433416")
+    scrap_article("https://www.20min.ch/fr/story/trafic-ferroviaire-l-abonnement-demi-tarif-pourrait-bientot-disparaitre-103433886")
