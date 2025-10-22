@@ -179,13 +179,7 @@ def load_all_articles(dr, max_attempts: int = 200,scroll_pause: float = 2.0):
         print(f"Erreur lors du scroll: {e}")
         return previous_count
 
-def setup():
-    options, service = get_driver_requirements()
-    driver = webdriver.Chrome(service=service, options=options)
-    return driver
-
-def scrap_comments(art_id, art_comments_url):
-    driver = setup()
+def scrap_comments(driver, art_id, art_comments_url):
     load_page(driver, art_comments_url)
     accept_cookies(driver)
     load_all_articles(driver)

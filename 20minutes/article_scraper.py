@@ -14,7 +14,7 @@ def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_u
         art_nom_journal = "20minutes"
         cursor.execute("""
                        INSERT IGNORE INTO UNIL_Article (art_id, art_titre, art_url, art_categorie,art_date, art_description, art_commentaires_actifs, art_nom_journal)
-                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, normalize_date(art_date), art_description, art_commentaires_actifs, art_nom_journal))
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, normalize_date(art_date), art_description, art_commentaires_actifs, art_nom_journal))
         conn.commit()
     except Exception as e:
         exit(2)
@@ -82,7 +82,7 @@ def scrap_article(article_url, categorie):
     accept_cookies(driver)
     process_data(article_url, categorie, driver)
     if has_comments_section(article_url):
-        scrap_comments(get_id(article_url), get_url_comments(article_url))
+        scrap_comments(driver, get_id(article_url), get_url_comments(article_url))
     driver.quit()
 
 #if __name__ == '__main__':
