@@ -1,18 +1,42 @@
 import time
 from typing import List, Tuple
+
 from selenium import webdriver
 from selenium.common.exceptions import (NoSuchElementException, StaleElementReferenceException, WebDriverException)
 from selenium.webdriver.common.by import By
+
+from dbConfig import get_connection
 from utils import hash_md5, get_driver_requirements, load_page
 
 
 def save_answer(art_id, com_id, com_author, com_content, com_ref_id):
-    # TODO : to complete
-    return
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+                       INSERT IGNORE INTO UNIL_Commentaire (com_id, com_auteur, com_contenu, com_art_id, com_commentaire_parent)
+                       VALUES (?, ?, ?, ?, ?);""", (com_id, com_author, com_content, art_id, com_ref_id))
+        conn.commit()
+    except Exception:
+        exit(2)
+    finally:
+        cursor.close()
+        conn.close()
 
 def save_comment(art_id, com_id, com_author, com_content):
-    # TODO : to complete
-    return
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+                       INSERT
+                       IGNORE INTO UNIL_Commentaire (com_id, com_auteur, com_contenu, com_art_id)
+                           VALUES (?, ?, ?, ?);""", (com_id, com_author, com_content, art_id))
+        conn.commit()
+    except Exception:
+        exit(2)
+    finally:
+        cursor.close()
+        conn.close()
 
 def get_all_comments(dr) -> List:
     try:
@@ -168,5 +192,5 @@ def scrap_comments(art_id, art_comments_url):
     process_comments(driver, art_id)
     driver.quit()
 
-if __name__ == '__main__':
-    scrap_comments("103433427", "https://www.20min.ch/fr/comment/103433427")
+#if __name__ == '__main__':
+    #scrap_comments("103433427", "https://www.20min.ch/fr/comment/103433427")

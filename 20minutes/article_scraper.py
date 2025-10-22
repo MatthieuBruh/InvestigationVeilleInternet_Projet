@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.common import WebDriverException
 from selenium.webdriver.common.by import By
 
-from comments import scrap_comments
+from comments_scraper import scrap_comments
 from dbConfig import get_connection
 from utils import normalize_date, get_driver_requirements
 
@@ -16,8 +16,8 @@ def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_u
         cursor = conn.cursor()
         art_nom_journal = "20minutes"
         cursor.execute("""
-                       INSERT IGNORE INTO UNIL_Article (art_id, art_titre, art_url, art_categorie,art_date, art_commentaires_actifs, art_nom_journal)
-                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, normalize_date(art_date), art_commentaires_actifs, art_nom_journal))
+                       INSERT IGNORE INTO UNIL_Article (art_id, art_titre, art_url, art_categorie,art_date, art_description, art_commentaires_actifs, art_nom_journal)
+                       VALUES (?, ?, ?, ?, ?, ?, ?);""", (art_id, art_titre, art_url, art_categorie, normalize_date(art_date), art_description, art_commentaires_actifs, art_nom_journal))
         conn.commit()
     except Exception as e:
         exit(2)
@@ -59,7 +59,7 @@ def has_comments_section(comments_url)-> bool:
         print("Erreur lors de la requête :", e)
         return False
 
-def process_data(art_url, dr):
+def process_data(art_url, categorie, dr):
     art_title = get_title(dr)
     # print(f"Title : {art_title}")
     art_category = get_categorie(dr)
@@ -83,18 +83,18 @@ def load_page(dr, art_url):
         return False
 
 def setup():
-    rqts = get_driver_requirements()
-    driver = webdriver.Chrome(service=rqts[1], options=rqts[0])
+    options, service = get_driver_requirements()
+    driver = webdriver.Chrome(service=service, options=options)
     # driver = webdriver.Chrome(options=options)
     return driver
 
-def scrap_article(article_url):
+def scrap_article(article_url, categorie):
     driver = setup()
     load_page(driver, article_url)
-    process_data(article_url, driver)
-    # if has_comments_section(article_url):
-        # scrap_comments(get_id(article_url), get_url_comments(article_url))
+    process_data(article_url, categorie, driver)
+    if has_comments_section(article_url):
+        scrap_comments(get_id(article_url), get_url_comments(article_url))
     driver.quit()
 
-if __name__ == '__main__':
-    scrap_article("https://www.20min.ch/fr/story/trafic-ferroviaire-l-abonnement-demi-tarif-pourrait-bientot-disparaitre-103433886")
+#if __name__ == '__main__':
+    #scrap_article("https://www.20min.ch/fr/story/trafic-ferroviaire-l-abonnement-demi-tarif-pourrait-bientot-disparaitre-103433886")
