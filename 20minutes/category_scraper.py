@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from article_scraper import scrap_article
-from utils import get_driver_requirements
+from utils import get_driver_requirements, accept_cookies
 
 # Configuration des URLs (sans espaces à la fin !)
 URLS = {
@@ -36,22 +36,13 @@ def scroll_to_load_all(driver, max_scrolls=60, scroll_increment=800, wait_time=1
 
 def scrape_articles_from_category(url, category):
     options, service = get_driver_requirements()
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Chrome(service=service, options=options)
 
     queue_art = Queue()
     try:
         print(f"Chargement de {category} : {url}")
         driver.get(url)
-        try:
-            # Attendre jusqu'à 10 secondes que le bouton soit cliquable
-            accept_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
-            )
-            accept_button.click()
-            print("Cookies acceptés.")
-        except Exception:
-            print("Aucune bannière de cookies détectée ou déjà acceptée.")
-        
+        accept_cookies(driver)
         # scroll_to_load_all(driver)
 
         # Attendre que le contenu soit chargé
@@ -76,7 +67,7 @@ def scrape_articles_from_category(url, category):
 
                 if title and href and len(title) > 10 and href not in seen_urls:
                     seen_urls.add(href)
-                    queue_art.append({"title": title, "url": href})
+                    queue_art.put({"title": title, "url": href})
             except Exception:
                 # Ignorer les éléments problématiques
                 continue
@@ -84,7 +75,7 @@ def scrape_articles_from_category(url, category):
 
     except Exception as e:
         print(f"Erreur lors du scraping de {category} : {e}")
-        return []
+        exit(1)
     finally:
         try:
             driver.quit()
@@ -100,7 +91,9 @@ def worker_thread(article_queue, cat):
                 break
             try:
                 scrap_article(article.get('url'), cat)
+                # print("Article done: ", article.get('url'))
             except Exception:
+                # print("Article error: ", article.get('url'))
                 continue
             article_queue.task_done()
         except:
@@ -109,10 +102,7 @@ def worker_thread(article_queue, cat):
 def process_articles(article_queue, articles_category, num_workers=4):
     threads = []
     for i in range(num_workers):
-        thread = threading.Thread(
-            target=worker_thread,
-            args=(article_queue, articles_category)
-        )
+        thread = threading.Thread(target=worker_thread,args=(article_queue, articles_category))
         thread.start()
         threads.append(thread)
 
@@ -125,7 +115,6 @@ def process_articles(article_queue, articles_category, num_workers=4):
     # Attendre que tous les threads se terminent
     for thread in threads:
         thread.join()
-
 
 # Exécution principale
 if __name__ == "__main__":

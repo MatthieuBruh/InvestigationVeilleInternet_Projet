@@ -1,13 +1,10 @@
-import time
-
 import requests
 from selenium import webdriver
-from selenium.common import WebDriverException
 from selenium.webdriver.common.by import By
 
 from comments_scraper import scrap_comments
 from dbConfig import get_connection
-from utils import normalize_date, get_driver_requirements
+from utils import normalize_date, get_driver_requirements, accept_cookies, load_page
 
 
 def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_url, art_commentaires_actifs):
@@ -74,23 +71,15 @@ def process_data(art_url, categorie, dr):
 
     save_data(get_id(art_url), art_title, art_category, art_date, art_description, art_url, art_has_comments)
 
-def load_page(dr, art_url):
-    try:
-        dr.get(art_url)
-        time.sleep(5)
-        return True
-    except WebDriverException as e:
-        return False
-
 def setup():
     options, service = get_driver_requirements()
     driver = webdriver.Chrome(service=service, options=options)
-    # driver = webdriver.Chrome(options=options)
     return driver
 
 def scrap_article(article_url, categorie):
     driver = setup()
     load_page(driver, article_url)
+    accept_cookies(driver)
     process_data(article_url, categorie, driver)
     if has_comments_section(article_url):
         scrap_comments(get_id(article_url), get_url_comments(article_url))

@@ -6,7 +6,7 @@ from selenium.common.exceptions import (NoSuchElementException, StaleElementRefe
 from selenium.webdriver.common.by import By
 
 from dbConfig import get_connection
-from utils import hash_md5, get_driver_requirements, load_page
+from utils import hash_md5, get_driver_requirements, load_page, accept_cookies
 
 
 def save_answer(art_id, com_id, com_author, com_content, com_ref_id):
@@ -180,14 +180,14 @@ def load_all_articles(dr, max_attempts: int = 200,scroll_pause: float = 2.0):
         return previous_count
 
 def setup():
-    rqts = get_driver_requirements()
-    driver = webdriver.Chrome(service=rqts[1], options=rqts[0])
-    # driver = webdriver.Chrome(options=options)
+    options, service = get_driver_requirements()
+    driver = webdriver.Chrome(service=service, options=options)
     return driver
 
 def scrap_comments(art_id, art_comments_url):
     driver = setup()
     load_page(driver, art_comments_url)
+    accept_cookies(driver)
     load_all_articles(driver)
     process_comments(driver, art_id)
     driver.quit()

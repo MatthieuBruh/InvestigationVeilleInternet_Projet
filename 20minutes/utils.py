@@ -6,6 +6,9 @@ from typing import Tuple
 from selenium.common import WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 
 def normalize_date(art_date):
@@ -43,3 +46,13 @@ def get_driver_requirements() ->Tuple[Options, Service]:
     options.add_experimental_option('useAutomationExtension', False)
     service = Service("/usr/bin/chromedriver")
     return options, service
+
+def accept_cookies(driver):
+    try:
+        accept_button = WebDriverWait(driver, 8).until(
+            EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
+        )
+        accept_button.click()
+        print("Cookies acceptés.")
+    except Exception:
+        print("Aucune bannière de cookies détectée ou déjà acceptée.")
