@@ -18,11 +18,11 @@ CREATE TABLE IF NOT EXISTS UNIL_Article (
 
 -- Table UNIL_Commentaire
 CREATE TABLE IF NOT EXISTS UNIL_Commentaire (
-    com_id INT AUTO_INCREMENT PRIMARY KEY,
-    com_auteur VARCHAR(255),    
+    com_id VARCHAR(255) PRIMARY KEY,
+    com_auteur VARCHAR(255),
     com_contenu TEXT,
     com_art_id VARCHAR(255) NOT NULL,
-    com_commentaire_parent INT,
+    com_commentaire_parent VARCHAR(255),
     CONSTRAINT fk_commentaire_article 
         FOREIGN KEY (com_art_id) 
         REFERENCES UNIL_Article(art_id)

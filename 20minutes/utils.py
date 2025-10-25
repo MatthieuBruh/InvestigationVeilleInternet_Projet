@@ -1,5 +1,7 @@
 import datetime
 import hashlib
+import os
+import pickle
 import time
 from typing import Tuple
 
@@ -26,7 +28,7 @@ def hash_md5(data):
 def load_page(dr, url):
     try:
         dr.get(url)
-        time.sleep(5)
+        time.sleep(3)
         return True
     except WebDriverException as e:
         return False
@@ -49,10 +51,25 @@ def get_driver_requirements() ->Tuple[Options, Service]:
 
 def accept_cookies(driver):
     try:
-        accept_button = WebDriverWait(driver, 8).until(
+        accept_button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
         )
         accept_button.click()
-        print("Cookies acceptés.")
+        # print("Cookies acceptés.")
     except Exception:
-        print("Aucune bannière de cookies détectée ou déjà acceptée.")
+        # print("Aucune bannière de cookies détectée ou déjà acceptée.")
+        pass
+
+
+def save_cookies(driver, filepath):
+    with open(filepath, "wb") as file:
+        pickle.dump(driver.get_cookies(), file)
+
+def load_cookies(driver, filepath):
+    if os.path.exists(filepath):
+        with open(filepath, "rb") as file:
+            cookies = pickle.load(file)
+            for cookie in cookies:
+                driver.add_cookie(cookie)
+        return True
+    return False

@@ -3,9 +3,9 @@ import mariadb
 def get_connection():
     try:
         conn = mariadb.connect(
-            user="pythonuser",
-            password="MDP",
-            host="localhost",
+            user="USERNAME",
+            password="PASSWORD",
+            host="IP_ADDRESS",
             port=3306,
             database="unil_scraper"
         )

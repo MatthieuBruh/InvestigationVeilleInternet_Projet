@@ -1,12 +1,11 @@
 import time
 from typing import List, Tuple
 
-from selenium import webdriver
 from selenium.common.exceptions import (NoSuchElementException, StaleElementReferenceException, WebDriverException)
 from selenium.webdriver.common.by import By
 
 from dbConfig import get_connection
-from utils import hash_md5, get_driver_requirements, load_page, accept_cookies
+from utils import hash_md5
 
 
 def save_answer(art_id, com_id, com_author, com_content, com_ref_id):
@@ -18,12 +17,13 @@ def save_answer(art_id, com_id, com_author, com_content, com_ref_id):
                        VALUES (?, ?, ?, ?, ?);""", (com_id, com_author, com_content, art_id, com_ref_id))
         conn.commit()
     except Exception:
-        exit(2)
+        pass
     finally:
         cursor.close()
         conn.close()
 
 def save_comment(art_id, com_id, com_author, com_content):
+    # print("\tCommentaire", com_id, "| contenu :", com_content)
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -32,8 +32,9 @@ def save_comment(art_id, com_id, com_author, com_content):
                        IGNORE INTO UNIL_Commentaire (com_id, com_auteur, com_contenu, com_art_id)
                            VALUES (?, ?, ?, ?);""", (com_id, com_author, com_content, art_id))
         conn.commit()
+        # print("\tCommentaire sauvegardé", com_id)
     except Exception:
-        exit(2)
+        pass
     finally:
         cursor.close()
         conn.close()
@@ -43,7 +44,8 @@ def get_all_comments(dr) -> List:
         articles = dr.find_elements(By.TAG_NAME, "article")
         return articles
     except Exception as e:
-        print(f"Erreur lors de la récupération des articles: {e}")
+        # print(f"Erreur lors de la récupération des articles: {e}")
+        pass
         return []
 
 def extract_comment_data(article) -> Tuple[str, str]:
@@ -53,13 +55,15 @@ def extract_comment_data(article) -> Tuple[str, str]:
     except (NoSuchElementException, StaleElementReferenceException):
         pass
     except Exception as e:
-        print(f"Erreur lors de l'extraction du pseudo: {e}")
+        # print(f"Erreur lors de l'extraction du pseudo: {e}")
+        pass
     try:
         contenu = article.find_element(By.CSS_SELECTOR, ".sc-5be4c02d-0.gDVcQV").text.strip()
     except (NoSuchElementException, StaleElementReferenceException):
         pass
     except Exception as e:
-        print(f"Erreur lors de l'extraction du contenu: {e}")
+        # print(f"Erreur lors de l'extraction du contenu: {e}")
+        pass
     return pseudo, contenu
 
 def is_reply_button(button) -> bool:
@@ -84,13 +88,13 @@ def process_answers(art_id, comment, hash_comment):
             if not is_reply_button(button):
                 continue
             button_text = button.text
-            print(f"Bouton de réponses trouvé: '{button_text}'")
+            # print(f"Bouton de réponses trouvé: '{button_text}'")
             # Cliquer sur le bouton
             try:
                 button.click()
                 time.sleep(0.8)
             except Exception as e:
-                print(f"Erreur lors du clic: {e}")
+                # print(f"Erreur lors du clic: {e}")
                 continue
             # Récupérer les réponses (articles imbriqués)
             try:
@@ -106,13 +110,13 @@ def process_answers(art_id, comment, hash_comment):
                 else:
                     return True, 0
             except Exception as e:
-                print(f"Erreur lors de l'extraction des réponses: {e}")
+                # print(f"Erreur lors de l'extraction des réponses: {e}")
                 return True, 0
 
         except (StaleElementReferenceException, NoSuchElementException):
             continue
         except Exception as e:
-            print(f"Erreur lors du traitement d'un bouton: {e}")
+            # print(f"Erreur lors du traitement d'un bouton: {e}")
             continue
     return False, 0
 
@@ -122,7 +126,7 @@ def process_comments(dr, art_id) -> Tuple[int, int, int]:
     total_replies = 0
     comments_with_replies = 0
     buttons_clicked = 0
-    print(f"   Traitement de {total_comments} de commentaires...\n")
+    # print(f"   Traitement de {total_comments} de commentaires...\n")
     for index, article in enumerate(comments, 1):
         try:
             try:
@@ -139,6 +143,7 @@ def process_comments(dr, art_id) -> Tuple[int, int, int]:
             except Exception as e:
                 continue
             # Chercher et cliquer sur le bouton de réponses
+
             button_found, num_replies = process_answers(art_id, article, com_hash_id)
             if button_found:
                 buttons_clicked += 1
@@ -146,10 +151,10 @@ def process_comments(dr, art_id) -> Tuple[int, int, int]:
                     total_replies += num_replies
                     comments_with_replies += 1
         except StaleElementReferenceException:
-            print(f"Le commentaire {index} n'est plus accessible (élément obsolète)")
+            # print(f"Le commentaire {index} n'est plus accessible (élément obsolète)")
             continue
         except Exception as e:
-            print(f"Erreur sur le commentaire {index}: {e}")
+            # print(f"Erreur sur le commentaire {index}: {e}")
             continue
 
 def load_all_articles(dr, max_attempts: int = 200,scroll_pause: float = 2.0):
@@ -172,19 +177,12 @@ def load_all_articles(dr, max_attempts: int = 200,scroll_pause: float = 2.0):
                 no_change_count = 0
             previous_count = current_count
             attempt += 1
-
         return previous_count
-
     except WebDriverException as e:
-        print(f"Erreur lors du scroll: {e}")
+        # print(f"Erreur lors du scroll: {e}")
         return previous_count
 
 def scrap_comments(driver, art_id, art_comments_url):
-    load_page(driver, art_comments_url)
-    accept_cookies(driver)
+    driver.get(art_comments_url)
     load_all_articles(driver)
     process_comments(driver, art_id)
-    driver.quit()
-
-#if __name__ == '__main__':
-    #scrap_comments("103433427", "https://www.20min.ch/fr/comment/103433427")
