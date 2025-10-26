@@ -14,26 +14,33 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 
 def normalize_date(art_date):
+    """Normalise une date ISO en format SQL"""
     if not art_date:
         return None
     try:
-        dt = datetime.fromisoformat(art_date.replace("Z", "+00:00"))
+        dt = datetime.datetime.fromisoformat(art_date.replace("Z", "+00:00"))
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         return None
 
+
 def hash_md5(data):
+    """Génère un hash MD5"""
     return hashlib.md5(data.encode('utf-8')).hexdigest()
 
+
 def load_page(dr, url):
+    """Charge une page avec gestion d'erreur"""
     try:
         dr.get(url)
         time.sleep(3)
         return True
-    except WebDriverException as e:
+    except WebDriverException:
         return False
 
-def get_driver_requirements() ->Tuple[Options, Service]:
+
+def get_driver_requirements() -> Tuple[Options, Service]:
+    """Configure les options du driver Chrome"""
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -46,28 +53,35 @@ def get_driver_requirements() ->Tuple[Options, Service]:
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
+
     service = Service("/usr/bin/chromedriver")
+
     return options, service
 
+
 def accept_cookies(driver):
+    """Accepte les cookies si la bannière apparaît"""
     try:
         accept_button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
         )
         accept_button.click()
-        # print("Cookies acceptés.")
     except Exception:
-        # print("Aucune bannière de cookies détectée ou déjà acceptée.")
         pass
 
 
 def save_cookies(driver, filepath):
-    with open(filepath, "wb") as file:
+    """Sauvegarde les cookies de session"""
+    os.makedirs("./cookies", exist_ok=True)
+    with open(f"./cookies/{filepath}", "wb") as file:
         pickle.dump(driver.get_cookies(), file)
 
+
 def load_cookies(driver, filepath):
-    if os.path.exists(filepath):
-        with open(filepath, "rb") as file:
+    """Charge les cookies de session"""
+    cookie_path = f"./cookies/{filepath}"
+    if os.path.exists(cookie_path):
+        with open(cookie_path, "rb") as file:
             cookies = pickle.load(file)
             for cookie in cookies:
                 driver.add_cookie(cookie)
