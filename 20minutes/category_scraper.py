@@ -88,6 +88,7 @@ def worker_thread(article_queue, cat):
                 break
 
             try:
+                has_error = False
                 print(
                     f"[{processed + failed + 1}/{article_queue.qsize() + processed + failed + 1}] Traitement : {article.get('url')}")
                 scrap_article(driver, article.get('url'), cat)
@@ -96,12 +97,13 @@ def worker_thread(article_queue, cat):
             except Exception as e:
                 print(f"  ❌ Erreur : {e}")
                 failed += 1
+                has_error = True
 
             article_queue.task_done()
             cpt += 1
 
             # Réinitialisation périodique du driver
-            if cpt % 20 == 0:
+            if cpt % 20 == 0 or has_error:
                 print(f"\n⏸️ Pause - Réinitialisation du driver (après {cpt} articles)")
 
                 # Flush avant de fermer
@@ -140,6 +142,8 @@ def start_scraping():
     print("=" * 60)
 
     for category, url in URLS.items():
+        if category == "monde":
+            continue
         res_articles = scrape_articles_from_category(url, category)
 
         if res_articles and not res_articles.empty():
