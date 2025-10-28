@@ -5,9 +5,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import (
+    InvalidSessionIdException,
+    WebDriverException,
+    TimeoutException
+)
 
 from articles_scraper import scrap_article, flush_article_batch
 from comments_scraper import flush_comment_batch
+from dbConfig import get_connection
 from utils import get_driver_requirements, accept_cookies, save_cookies
 
 # Configuration des URLs
@@ -17,6 +23,7 @@ URLS = {
     "sport": "https://www.20min.ch/fr/sports",
     "economie": "https://www.20min.ch/fr/economie"
 }
+
 
 def scrape_articles_from_category(url, category):
     options, service = get_driver_requirements()
@@ -72,12 +79,35 @@ def scrape_articles_from_category(url, category):
             pass
 
 
-def worker_thread(article_queue, cat):
+def recreate_driver(cat):
+    """Recrée un driver Chrome propre"""
+    print(f"\n🔄 Recréation du driver Chrome...")
+
     options, service = get_driver_requirements()
     driver = webdriver.Chrome(options=options)
+
+    # ✅ Configurer les timeouts
+    driver.set_page_load_timeout(90)
+    driver.implicitly_wait(10)
+
+    try:
+        driver.get("https://www.20min.ch/fr")
+        accept_cookies(driver)
+        save_cookies(driver, f"session_cookies_{cat}.pkl")
+    except Exception as e:
+        print(f"⚠️ Erreur lors de l'initialisation du driver : {e}")
+
+    print("✓ Driver recréé\n")
+    return driver
+
+
+def worker_thread(article_queue, cat):
+    driver = recreate_driver(cat)
+
     cpt = 0
     processed = 0
     failed = 0
+    consecutive_errors = 0  # ✅ Compteur d'erreurs consécutives
 
     while True:
         try:
@@ -88,43 +118,111 @@ def worker_thread(article_queue, cat):
                 break
 
             try:
-                has_error = False
                 print(
                     f"[{processed + failed + 1}/{article_queue.qsize() + processed + failed + 1}] Traitement : {article.get('url')}")
+
                 scrap_article(driver, article.get('url'), cat)
+
                 processed += 1
+                consecutive_errors = 0  # Reset le compteur en cas de succès
+
+                # Petite pause entre articles
+                sleep(2)
+
+            except InvalidSessionIdException as e:
+                # Session perdue → recréer le driver immédiatement
+                print(f"  ⚠️ Session driver perdue, recréation...")
+
+                try:
+                    driver.quit()
+                except:
+                    pass
+
+                driver = recreate_driver(cat)
+                failed += 1
+                consecutive_errors += 1
+
+            except (TimeoutException, WebDriverException) as e:
+                print(f"  ❌ Erreur driver/timeout : {e}")
+                failed += 1
+                consecutive_errors += 1
 
             except Exception as e:
                 print(f"  ❌ Erreur : {e}")
                 failed += 1
-                has_error = True
+                consecutive_errors += 1
 
             article_queue.task_done()
             cpt += 1
 
-            # Réinitialisation périodique du driver
-            if cpt % 20 == 0 or has_error:
+            # ✅ Si trop d'erreurs consécutives → recréer le driver
+            if consecutive_errors >= 3:
+                print(f"\n⚠️ 3 erreurs consécutives détectées, recréation du driver...")
+
+                # Flush avant de recréer
+                flush_article_batch()
+                flush_comment_batch()
+
+                # Commit
+                conn = get_connection()
+                conn.commit()
+
+                try:
+                    driver.quit()
+                except:
+                    pass
+
+                sleep(10)
+                driver = recreate_driver(cat)
+                consecutive_errors = 0
+
+            # ✅ Checkpoint tous les 10 articles
+            if cpt % 10 == 0:
+                print(f"\n💾 Checkpoint - Sauvegarde (après {cpt} articles)")
+                flush_article_batch()
+                flush_comment_batch()
+
+                conn = get_connection()
+                conn.commit()
+                print("✓ Données sauvegardées\n")
+
+            # ✅ Réinitialisation périodique tous les 20 articles
+            if cpt % 20 == 0:
                 print(f"\n⏸️ Pause - Réinitialisation du driver (après {cpt} articles)")
 
                 # Flush avant de fermer
                 flush_article_batch()
                 flush_comment_batch()
 
-                driver.close()
-                driver.quit()
-                sleep(10)
+                conn = get_connection()
+                conn.commit()
 
-                options, service = get_driver_requirements()
-                driver = webdriver.Chrome(options=options)
-                driver.get("https://www.20min.ch/fr")
-                accept_cookies(driver)
-                save_cookies(driver, f"session_cookies_{cat}.pkl")
+                try:
+                    driver.close()
+                    driver.quit()
+                except:
+                    pass
+
+                sleep(15)  # Pause plus longue
+
+                driver = recreate_driver(cat)
                 print("▶️ Reprise du scraping\n")
 
-        except:
+        except Exception as e:
+            print(f"❌ Erreur fatale dans worker_thread : {e}")
             break
 
-    # Nettoyage final
+    # ✅ Nettoyage final
+    print("\n💾 Sauvegarde finale...")
+    flush_article_batch()
+    flush_comment_batch()
+
+    try:
+        conn = get_connection()
+        conn.commit()
+    except:
+        pass
+
     try:
         driver.quit()
     except:
@@ -142,18 +240,26 @@ def start_scraping():
     print("=" * 60)
 
     for category, url in URLS.items():
-        if category == "monde":
-            continue
+        # ✅ Retirez cette ligne pour scraper toutes les catégories
+        # if category == "monde":
+        #     continue
+
         res_articles = scrape_articles_from_category(url, category)
 
         if res_articles and not res_articles.empty():
             worker_thread(res_articles, category)
 
-            # ✅ CRITIQUE : Flush les batchs après chaque catégorie
+            # ✅ Flush final après chaque catégorie
             print(f"\n💾 Finalisation de la catégorie {category}...")
             flush_article_batch()
             flush_comment_batch()
-            print(f"✓ Catégorie {category} terminée\n")
+
+            try:
+                conn = get_connection()
+                conn.commit()
+                print(f"✓ Catégorie {category} sauvegardée\n")
+            except Exception as e:
+                print(f"⚠️ Erreur commit : {e}")
 
         else:
             print(f"⚠️ Aucun article trouvé pour {category}\n")
