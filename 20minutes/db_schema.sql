@@ -1,13 +1,16 @@
 -- Table UNIL_Article
 CREATE TABLE IF NOT EXISTS UNIL_Article (
-  art_id VARCHAR PRIMARY KEY,
-  art_titre VARCHAR,
-  art_url VARCHAR,
-  art_categorie VARCHAR,
-  art_date VARCHAR,
-  art_description VARCHAR,
-  art_commentaires_actifs INTEGER,
-  art_nom_journal VARCHAR
+    art_id VARCHAR PRIMARY KEY,
+    art_titre VARCHAR,
+    art_url VARCHAR,
+    art_categorie VARCHAR,
+    art_date VARCHAR,
+    art_description VARCHAR,
+    art_commentaires_actifs INTEGER,
+    art_nom_journal VARCHAR,
+    art_date_recolte VARCHAR,
+    art_nom_pdf VARCHAR,
+    art_hash_pdf VARCHAR
 );
 
 -- Table UNIL_Commentaire

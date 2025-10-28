@@ -5,7 +5,7 @@ from selenium.common.exceptions import (NoSuchElementException, StaleElementRefe
 from selenium.webdriver.common.by import By
 
 from dbConfig import get_connection
-from utils import hash_md5
+from utils import hash_md5, sauvegarder_page_pdf
 
 # ✅ BATCH POUR COMMENTAIRES
 _comment_batch = []
@@ -204,9 +204,11 @@ def load_all_articles(dr, max_attempts: int = 200, scroll_pause: float = 2.0):
 def scrap_comments(driver, art_id, art_comments_url):
     driver.get(art_comments_url)
     load_all_articles(driver)
+    pdf_path, pdf_hash = sauvegarder_page_pdf(driver, "20min-" + art_id + '.pdf')
     total_com, total_rep, com_with_rep = process_comments(driver, art_id)
 
     # Flush après chaque article avec commentaires
     flush_comment_batch()
 
     print(f"    → {total_com} commentaires, {total_rep} réponses")
+    return pdf_path, pdf_hash

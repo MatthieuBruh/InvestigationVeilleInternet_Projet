@@ -1,3 +1,4 @@
+import base64
 import datetime
 import hashlib
 import os
@@ -87,3 +88,39 @@ def load_cookies(driver, filepath):
                 driver.add_cookie(cookie)
         return True
     return False
+
+
+def sauvegarder_page_pdf(driver, chemin_fichier):
+    """
+    Sauvegarde la page actuelle en PDF et retourne le hash
+    """
+    # Calculer la hauteur de la page pour capturer tout le contenu
+    hauteur_totale = driver.execute_script("return document.body.scrollHeight")
+
+    # Configuration de l'impression
+    print_options = {
+        'landscape': True,
+        'displayHeaderFooter': True,
+        'printBackground': True,
+        'preferCSSPageSize': True,
+        'paperWidth': 8.27,  # A4 en pouces
+        'paperHeight': 11.69,
+    }
+
+    # Exécuter la commande d'impression via Chrome DevTools
+    result = driver.execute_cdp_cmd("Page.printToPDF", print_options)
+
+    # Décoder le PDF
+    pdf_data = base64.b64decode(result['data'])
+
+    # Calculer le hash SHA-256
+    hash_sha256 = hashlib.sha256(pdf_data).hexdigest()
+
+    # Sauvegarder le PDF
+    with open("./pdf/" + chemin_fichier, 'wb') as f:
+        f.write(pdf_data)
+
+    print(f"\tPDF sauvegardé : {chemin_fichier}")
+    print(f"\tHash SHA-256 : {hash_sha256}")
+
+    return chemin_fichier, hash_sha256
