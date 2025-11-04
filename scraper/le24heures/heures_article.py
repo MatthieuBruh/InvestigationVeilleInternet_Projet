@@ -2,9 +2,9 @@ import requests
 from datetime import datetime
 from selenium.webdriver.common.by import By
 
-from heures_comments_scraper import scrap_comments
-from heures_dbConfig import get_connection
-from heures_utils import normalize_date, load_cookies, get_driver_requirements
+from heures_comments import scrap_comments
+from scraper.dbConfig import get_connection
+from scraper.utils import normalize_date, load_cookies, get_driver_requirements
 from selenium import webdriver
 
 # ✅ BATCH POUR ARTICLES
@@ -16,7 +16,7 @@ def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_u
     """Sauvegarde en batch pour optimisation"""
     global _article_batch
 
-    art_nom_journal = "20minutes"
+    art_nom_journal = "24heures.ch"
     art_date_article = str(datetime.now())
 
     _article_batch.append((

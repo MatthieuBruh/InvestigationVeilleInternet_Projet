@@ -4,8 +4,8 @@ from typing import List, Tuple
 from selenium.common.exceptions import (NoSuchElementException, StaleElementReferenceException, WebDriverException)
 from selenium.webdriver.common.by import By
 
-from heures_dbConfig import get_connection
-from heures_utils import hash_md5, sauvegarder_page_pdf
+from scraper.dbConfig import get_connection
+from scraper.utils import hash_md5, sauvegarder_page_pdf
 
 # ✅ BATCH POUR COMMENTAIRES
 _comment_batch = []

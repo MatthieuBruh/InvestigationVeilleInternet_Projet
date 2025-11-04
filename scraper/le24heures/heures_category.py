@@ -11,17 +11,12 @@ from selenium.common.exceptions import (
     TimeoutException
 )
 
-from heures_articles_scraper import scrap_article, flush_article_batch
-from heures_comments_scraper import flush_comment_batch
-from heures_dbConfig import get_connection
-from heures_utils import get_driver_requirements, accept_cookies, save_cookies
+from heures_article import scrap_article, flush_article_batch
+from heures_comments import flush_comment_batch
+from scraper.dbConfig import get_connection
+from scraper.utils import get_driver_requirements, accept_cookies, save_cookies
 
 # Configuration des URLs
-URLS = {
-    "monde": "https://www.20min.ch/fr/monde",
-    "suisse": "https://www.20min.ch/fr/suisse"
-}
-
 
 def scrape_articles_from_category(url, category):
     options, service = get_driver_requirements()
@@ -232,7 +227,7 @@ def worker_thread(article_queue, cat):
     print(f"  Total : {processed + failed}")
 
 
-def start_scraping():
+def scrap_categories(URLS):
     print("\n" + "=" * 60)
     print("🚀 DÉBUT DU SCRAPING")
     print("=" * 60)
