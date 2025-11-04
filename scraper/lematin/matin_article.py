@@ -3,9 +3,9 @@ from datetime import datetime
 import requests
 from selenium.webdriver.common.by import By
 
-from comments_scraper import scrap_comments
-from dbConfig import get_connection
-from utils import normalize_date, load_cookies
+from matin_comments import scrap_comments
+from scraper.dbConfig import get_connection
+from scraper.utils import normalize_date, load_cookies
 
 # ✅ BATCH POUR ARTICLES
 _article_batch = []
@@ -15,7 +15,7 @@ ARTICLE_BATCH_SIZE = 10
 def save_data(art_id, art_titre, art_categorie, art_date, art_description, art_url, art_commentaires_actifs):
     """Sauvegarde en batch pour optimisation"""
     global _article_batch
-    art_nom_journal = "20minutes"
+    art_nom_journal = "lematin.ch/"
     art_date_article = str(datetime.now())
     _article_batch.append((
         art_id,
