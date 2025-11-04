@@ -73,7 +73,7 @@ def accept_cookies(driver):
 
 def save_cookies(driver, filepath):
     """Sauvegarde les cookies de session"""
-    os.makedirs("./cookies", exist_ok=True)
+    os.makedirs("cookies", exist_ok=True)
     with open(f"./cookies/{filepath}", "wb") as file:
         pickle.dump(driver.get_cookies(), file)
 

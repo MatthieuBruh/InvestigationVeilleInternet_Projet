@@ -13,7 +13,7 @@ def init_database():
         cursor = conn.cursor()
 
         # Lire et exécuter le schéma SQL
-        with open('./db_schema.sql', 'r', encoding='utf-8') as f:
+        with open('db_schema.sql', 'r', encoding='utf-8') as f:
             sql_script = f.read()
 
             # SQLite supporte executescript !
