@@ -19,9 +19,7 @@ from utils import get_driver_requirements, accept_cookies, save_cookies
 # Configuration des URLs
 URLS = {
     "monde": "https://www.20min.ch/fr/monde",
-    "suisse": "https://www.20min.ch/fr/suisse",
-    "sport": "https://www.20min.ch/fr/sports",
-    "economie": "https://www.20min.ch/fr/economie"
+    "suisse": "https://www.20min.ch/fr/suisse"
 }
 
 
