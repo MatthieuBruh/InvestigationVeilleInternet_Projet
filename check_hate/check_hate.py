@@ -187,7 +187,7 @@ def print_category_analysis(text):
 # Exemples d'utilisation
 if __name__ == "__main__":
 
-    exemples = [""]
+    exemples = ["La gauche écolo va revenir à la charge avec leur caisse unique. Caisse unique avec primes calculées selon le revenu. Cela aura pour conséquence que les mêmes vont payer pour pouvoir fiancer encore d'avantage d'assistés qui ne paieront rien. Regardez en France le désastre de leur Caisse maladie unique. Manque de médecins, Manque d'hôpitaux. Système de santé délabrée. La Caisse unique c'est une chose. Mais grand jamais, Non et Non à un impôt déguisé qui plume les assurés et fait payer les primes selon le revenu-fortune de l'assuré. Non à cette nouvelle arnaque des gauchos et partie des droitards-centristes. "]
 
     for i, texte in enumerate(exemples, 1):
         print(f"\n{'#' * 80}")
