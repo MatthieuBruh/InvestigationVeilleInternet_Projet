@@ -9,7 +9,7 @@ def get_connection():
     global _connection_cache
     if _connection_cache is None:
         try:
-            _connection_cache = sqlite3.connect('articles_20min.db')
+            _connection_cache = sqlite3.connect('articles_24heures.db')
             cursor = _connection_cache.cursor()
 
             # ✅ Optimisations critiques SQLite
