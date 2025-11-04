@@ -2,25 +2,23 @@ from queue import Queue
 from time import sleep
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import (
     InvalidSessionIdException,
     WebDriverException,
     TimeoutException
 )
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
-from articles_scraper import scrap_article, flush_article_batch
-from comments_scraper import flush_comment_batch
-from dbConfig import get_connection
-from utils import get_driver_requirements, accept_cookies, save_cookies
+from minutes_article import scrap_article, flush_article_batch
+from minutes_comments import flush_comment_batch
+from scraper.dbConfig import get_connection
+from scraper.utils import get_driver_requirements, accept_cookies, save_cookies
+
 
 # Configuration des URLs
-URLS = {
-    "monde": "https://www.20min.ch/fr/monde",
-    "suisse": "https://www.20min.ch/fr/suisse"
-}
+
 
 
 def scrape_articles_from_category(url, category):
@@ -232,7 +230,7 @@ def worker_thread(article_queue, cat):
     print(f"  Total : {processed + failed}")
 
 
-def start_scraping():
+def scrap_categories(URLS):
     print("\n" + "=" * 60)
     print("🚀 DÉBUT DU SCRAPING")
     print("=" * 60)
