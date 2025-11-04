@@ -1,5 +1,6 @@
 from dbConfig import get_connection, close_connection
-
+from le20minutes.minutes_main import start_scraping as start_scraping_minutes
+from lematin.matin_main import start_scraping as start_scraping_matin
 
 def init_database():
     """Initialise la base de données SQLite"""
@@ -38,6 +39,8 @@ if __name__ == '__main__':
     try:
         # Lancer le scraping
         print("Commencement")
+        start_scraping_minutes()
+        start_scraping_matin()
         # TODO : AJOUTER LES SCRAPPER start_scraping()
     except KeyboardInterrupt:
         print("\n\n⚠️ Interruption utilisateur détectée")
