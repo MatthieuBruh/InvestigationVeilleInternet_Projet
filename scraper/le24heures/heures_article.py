@@ -142,7 +142,7 @@ def process_article(art_url, categorie, dr) -> bool:
 
 def scrap_article(driver, article_url, category):
     driver.get(article_url)
-    load_cookies(driver, f"session_cookies_{category}.pkl")
+    load_cookies(driver, f"24heures-session_cookies_{category}.pkl")
     driver.refresh()
     has_comments = process_article(article_url, category, driver)
     if has_comments:

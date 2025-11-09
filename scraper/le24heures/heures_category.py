@@ -28,7 +28,7 @@ def scrape_articles_from_category(url, category):
         print(f"Chargement de {url}")
         driver.get(url)
         accept_cookies_24heures(driver)
-        save_cookies(driver, f"session_cookies_{category}.pkl")
+        save_cookies(driver, f"24heures-session_cookies_{category}.pkl")
 
         # Attendre que le contenu soit chargé
         WebDriverWait(driver, 15).until(
@@ -74,7 +74,7 @@ def recreate_driver(cat):
     try:
         driver.get("https://www.24heures.ch/")
         accept_cookies_24heures(driver)
-        save_cookies(driver, f"session_cookies_{cat}.pkl")
+        save_cookies(driver, f"24heures-session_cookies_{cat}.pkl")
     except Exception as e:
         print(f"⚠️ Erreur lors de l'initialisation du driver : {e}")
     print("✓ Driver recréé\n")
