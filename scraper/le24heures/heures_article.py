@@ -1,11 +1,13 @@
 import time
 from datetime import datetime
 
+from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 
-from scraper.le24heures.heures_comments import scrap_comments
 from scraper.dbConfig import get_connection
-from scraper.utils import normalize_date, load_cookies
+from scraper.le24heures.heures_comments import scrap_comments
+from scraper.utils import normalize_date, load_cookies, get_driver_requirements
 
 # ✅ BATCH POUR ARTICLES
 _article_batch = []
@@ -103,17 +105,25 @@ def get_nb_comments(dr):
     # print("Nombre de commentaires trouvés :", res.text.split(" commentaires")[0])
     return int(res.text.split(" commentaires")[0])
 
+
 def get_has_comments(dr) -> bool:
     time.sleep(1) # Attend que la page soit bien prête
-    btn = dr.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/div[2]/main/article/div[2]/div/div[3]/div/div[1]/button")
-    dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn) # Focus sur le bouton
-    btn.click()
-    time.sleep(1)
-    nb_comments = get_nb_comments(dr)
-    if nb_comments <= 0:
-        return False # Si 0 commentaire
-    else:
-        return True # Si a au moins 1 commentaire
+    try:
+        xpath_combined = (
+            "/html/body/div[1]/div/div[5]/div[2]/main/article/div[2]/div/div[3]/div/div[1]/button | "
+            "/html/body/div[1]/div/div[5]/div[2]/main/article/div[2]/div/div[2]/div/div[1]/button"
+        )
+        btn = dr.find_element(By.XPATH, xpath_combined)
+        dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn) # Focus sur le bouton
+        btn.click()
+        time.sleep(1)
+        nb_comments = get_nb_comments(dr)
+        if nb_comments <= 0:
+            return False # Si 0 commentaire
+        else:
+            return True # Si a au moins 1 commentaire
+    except:
+        return False
 
 def process_article(art_url, categorie, dr) -> bool:
     art_id = get_id(art_url)
@@ -149,5 +159,6 @@ def scrap_article(driver, article_url, category):
     driver = webdriver.Chrome(options=options)
     # scrap_article(driver, "https://www.24heures.ch/fislisbach-une-mere-sauve-sa-fille-tombee-dans-un-egout-987246423939", "TEST_CAT")
     # print("="*120)
+    # scrap_article(driver, 'https://www.24heures.ch/interview-de-martin-pfister-il-defend-un-rapprochement-avec-lue-797869082969', 'TEST_CAT')
     scrap_article(driver, 'https://www.24heures.ch/buergenstock-deux-cuisinieres-etoilees-expulsees-de-suisse-309173070390', "TEST_CAT")
-    # scrap_article(driver, 'https://www.24heures.ch/interview-de-martin-pfister-il-defend-un-rapprochement-avec-lue-797869082969', 'TEST_CAT')"""
+    # scrap_article(driver,'https://www.24heures.ch/shutdown-le-trafic-aerien-americain-reduit-faute-daiguilleurs-152310189275','TEST_CAT')"""
