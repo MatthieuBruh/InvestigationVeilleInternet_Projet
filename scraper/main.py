@@ -38,9 +38,10 @@ if __name__ == '__main__':
         print("❌ Impossible de démarrer le scraping")
         exit(1)
     try:
-        start_scraping_minutes()
-        start_scraping_matin()
         # TODO : Ajouter quand terminé start_scraping_heures()
+        # start_scraping_minutes()
+        # start_scraping_matin()
+        start_scraping_heures()
     except KeyboardInterrupt:
         print("\n\n⚠️ Interruption utilisateur détectée")
     except Exception as e:

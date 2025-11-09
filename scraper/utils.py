@@ -60,7 +60,7 @@ def get_driver_requirements() -> Tuple[Options, Service]:
     return options, service
 
 
-def accept_cookies(driver):
+def accept_cookies_20min_matin(driver):
     """Accepte les cookies si la bannière apparaît"""
     try:
         accept_button = WebDriverWait(driver, 5).until(
@@ -70,6 +70,23 @@ def accept_cookies(driver):
     except Exception:
         pass
 
+def accept_cookies_24heures(driver):
+    """Accepte les cookies si la bannière apparaît"""
+    try:
+        accept_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
+        )
+        accept_button.click()
+    except:
+        pass
+    time.sleep(2)
+    try:
+        close_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "tp-close tp-active"))
+        )
+        close_button.click()
+    except:
+        pass
 
 def save_cookies(driver, filepath):
     """Sauvegarde les cookies de session"""
@@ -124,3 +141,67 @@ def sauvegarder_page_pdf(driver, chemin_fichier):
     print(f"\tHash SHA-256 : {hash_sha256}")
 
     return chemin_fichier, hash_sha256
+
+
+def sauvegarder_page_avec_modal_pdf(driver, chemin_fichier, modal_element):
+    """
+    Sauvegarde toute la page avec le modal scrollé au premier plan
+    SANS modifier la page
+    """
+    from PIL import Image
+    import io
+
+    # Récupérer les dimensions du modal
+    hauteur_visible = driver.execute_script("return arguments[0].clientHeight;", modal_element)
+    hauteur_totale = driver.execute_script("return arguments[0].scrollHeight;", modal_element)
+    scroll_actuel = driver.execute_script("return arguments[0].scrollTop;", modal_element)
+
+    print(f"\tHauteur visible du modal: {hauteur_visible}px, Hauteur totale: {hauteur_totale}px")
+
+    screenshots = []
+    scroll_position = 0
+
+    # Remettre le scroll du modal en haut
+    driver.execute_script("arguments[0].scrollTop = 0;", modal_element)
+    time.sleep(0.5)
+
+    # Prendre des screenshots de TOUTE LA PAGE en scrollant le modal
+    while scroll_position < hauteur_totale:
+        # Screenshot de la page entière (pas juste le modal)
+        png = driver.get_screenshot_as_png()
+        screenshots.append(Image.open(io.BytesIO(png)))
+
+        # Scroller le modal (pas la page)
+        scroll_position += hauteur_visible - 100  # Overlap pour continuité
+        driver.execute_script(f"arguments[0].scrollTop = {scroll_position};", modal_element)
+        time.sleep(0.4)
+
+    # Restaurer la position de scroll du modal
+    driver.execute_script(f"arguments[0].scrollTop = {scroll_actuel};", modal_element)
+
+    # Combiner tous les screenshots
+    if screenshots:
+        total_height = sum(img.height for img in screenshots)
+        max_width = max(img.width for img in screenshots)
+
+        combined = Image.new('RGB', (max_width, total_height))
+
+        y_offset = 0
+        for img in screenshots:
+            combined.paste(img, (0, y_offset))
+            y_offset += img.height
+
+        # Sauvegarder en PDF
+        combined.save("./pdf/" + chemin_fichier, "PDF", resolution=100.0)
+
+        # Calculer le hash
+        img_bytes = io.BytesIO()
+        combined.save(img_bytes, format='PDF')
+        hash_sha256 = hashlib.sha256(img_bytes.getvalue()).hexdigest()
+
+        print(f"\tPDF sauvegardé : {chemin_fichier}")
+        print(f"\tHash SHA-256 : {hash_sha256}")
+
+        return chemin_fichier, hash_sha256
+
+    return None, None

@@ -5,12 +5,11 @@ from selenium.common.exceptions import (NoSuchElementException, StaleElementRefe
 from selenium.webdriver.common.by import By
 
 from scraper.dbConfig import get_connection
-from scraper.utils import hash_md5, sauvegarder_page_pdf
+from scraper.utils import hash_md5, sauvegarder_page_avec_modal_pdf
 
 # ✅ BATCH POUR COMMENTAIRES
 _comment_batch = []
 COMMENT_BATCH_SIZE = 20
-
 
 def save_comment(art_id, com_id, com_author, com_content, com_ref_id=None):
     """Sauvegarde en batch (commentaire ou réponse)"""
@@ -27,7 +26,6 @@ def save_comment(art_id, com_id, com_author, com_content, com_ref_id=None):
     # Flush quand le batch est plein
     if len(_comment_batch) >= COMMENT_BATCH_SIZE:
         flush_comment_batch()
-
 
 def flush_comment_batch():
     """Insère tous les commentaires en attente"""
@@ -54,161 +52,104 @@ def flush_comment_batch():
         conn.rollback()
         _comment_batch = []
 
-
 def get_all_comments(dr) -> List:
     try:
-        articles = dr.find_elements(By.TAG_NAME, "article")
-        return articles
-    except Exception:
+        comments = dr.find_elements(By.CSS_SELECTOR,"ul.comment-list > section.CommentItem_root__C_rfr")
+        return comments
+    except Exception as e:
+        print(e)
         return []
 
 
-def extract_comment_data(article) -> Tuple[str, str]:
-    pseudo, contenu = "", ""
-    try:
-        pseudo = article.find_element(By.CSS_SELECTOR, ".sc-d8c6148a-2.IIQUY").text.strip()
-    except (NoSuchElementException, StaleElementReferenceException):
-        pass
-    except Exception:
-        pass
+def extract_comment_data(cmt, is_comment = True) -> Tuple[str, str, list]:
+    """Extrait le pseudo, le contenu et les réponses d'un commentaire."""
 
-    try:
-        contenu = article.find_element(By.CSS_SELECTOR, ".sc-5be4c02d-0.gDVcQV").text.strip()
-    except (NoSuchElementException, StaleElementReferenceException):
-        pass
-    except Exception:
-        pass
-
-    return pseudo, contenu
-
-
-def is_reply_button(button) -> bool:
-    try:
-        if not (button.is_displayed() and button.is_enabled()):
-            return False
-        button_text = button.text.lower()
-        return 'réponse' in button_text
-    except (StaleElementReferenceException, NoSuchElementException):
-        return False
-    except Exception:
-        return False
-
-
-def process_answers(art_id, comment, hash_comment):
-    try:
-        all_buttons = comment.find_elements(By.TAG_NAME, "button")
-    except Exception:
-        return False, 0
-
-    for button in all_buttons:
+    def safe_get_text(by, selector, default=""):
         try:
-            if not is_reply_button(button):
-                continue
+            return cmt.find_element(by, selector).text.strip()
+        except (NoSuchElementException, StaleElementReferenceException):
+            return default
 
-            try:
-                button.click()
-                time.sleep(0.8)
-            except Exception:
-                continue
+    def safe_get_elements(by, selector):
+        try:
+            return cmt.find_elements(by, selector)
+        except (NoSuchElementException, StaleElementReferenceException):
+            return []
 
-            try:
-                nested_articles = comment.find_elements(By.TAG_NAME, "article")
-                num_replies = len(nested_articles)
+    pseudo = safe_get_text(By.CLASS_NAME, "CommentItem_nickname__iDUQA")
+    contenu = safe_get_text(By.CSS_SELECTOR, ".CommentItem_text__rsEMC p")
+    if is_comment:
+        reponses = safe_get_elements(By.CLASS_NAME, "CommentItem_root__C_rfr")
+    else:
+        reponses = []
 
-                if num_replies > 0:
-                    for reply_article in nested_articles:
-                        reply_pseudo, reply_contenu = extract_comment_data(reply_article)
-                        hash_id_reply = hash_md5(reply_pseudo + reply_contenu)
-                        # Utilise save_comment avec parent au lieu de save_answer
-                        save_comment(art_id, hash_id_reply, reply_pseudo, reply_contenu, hash_comment)
+    return pseudo, contenu, reponses
 
-                    return True, num_replies
-                else:
-                    return True, 0
-
-            except Exception:
-                return True, 0
-
+def process_answers(dr, art_id, com_hash, reponses):
+    for index, reponse in enumerate(reponses, 1):
+        try:
+            dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", reponse)
+            time.sleep(0.3)
+        except Exception:
+            continue
+        try:
+            pseudo, contenu, reponses = extract_comment_data(reponse, False)
+            hash_id_reply = hash_md5(pseudo + contenu)
+            save_comment(art_id, hash_id_reply, pseudo, contenu, com_hash)
         except (StaleElementReferenceException, NoSuchElementException):
             continue
         except Exception:
             continue
-
-    return False, 0
-
 
 def process_comments(dr, art_id) -> Tuple[int, int, int]:
     comments = get_all_comments(dr)
     total_comments = len(comments)
     total_replies = 0
     comments_with_replies = 0
-
-    for index, article in enumerate(comments, 1):
+    for index, comment in enumerate(comments, 1):
         try:
             try:
-                dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", article)
+                dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", comment)
                 time.sleep(0.3)
             except Exception:
                 continue
-
             try:
-                pseudo, contenu = extract_comment_data(article)
+                pseudo, contenu, reponses = extract_comment_data(comment)
                 com_hash_id = hash_md5(pseudo + contenu)
                 save_comment(art_id, com_hash_id, pseudo, contenu)
             except Exception:
                 continue
-
-            button_found, num_replies = process_answers(art_id, article, com_hash_id)
-
-            if button_found and num_replies > 0:
+            if len(reponses) > 0:
                 flush_comment_batch()
-                total_replies += num_replies
+                process_answers(dr, art_id, com_hash_id, reponses)
+                total_replies += len(reponses)
                 comments_with_replies += 1
-
         except StaleElementReferenceException:
             continue
         except Exception:
             continue
-
     return total_comments, total_replies, comments_with_replies
 
-
-def load_all_articles(dr, max_attempts: int = 200, scroll_pause: float = 2.0):
-    previous_count = 0
-    no_change_count = 0
+def load_all_comments(dr, max_attempts: int = 200, scroll_pause: float = 2.0):
+    """modal_comments = dr.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/div[2]/main/div[3]/div/div[2]/div")"""
     attempt = 0
-
     try:
         while attempt < max_attempts:
-            dr.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            bouton = dr.find_element(By.CSS_SELECTOR, "button.Button_-secondary__QOaqE:nth-child(2)")
+            dr.execute_script("arguments[0].scrollIntoView({block: 'center'});", bouton)
             time.sleep(scroll_pause)
-
-            current_count = len(get_all_comments(dr))
-
-            if current_count == previous_count:
-                no_change_count += 1
-                if no_change_count >= 3:
-                    break
-            else:
-                no_change_count = 0
-
-            previous_count = current_count
+            bouton.click()
+            time.sleep(scroll_pause)
             attempt += 1
-
-        return previous_count
-
     except WebDriverException:
-        return previous_count
+        return
 
-
-def scrap_comments(driver, art_id, art_comments_url):
-    driver.get(art_comments_url)
-    load_all_articles(driver)
-    pdf_path, pdf_hash = sauvegarder_page_pdf(driver, "20min-" + art_id + '.pdf')
+def scrap_comments(driver, art_id):
+    load_all_comments(driver)
+    modal_comment = driver.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/div[2]/main/div[3]/div/div[2]/div")
+    pdf_path, pdf_hash = sauvegarder_page_avec_modal_pdf(driver, "24heures-" + art_id + '.pdf', modal_comment)
     total_com, total_rep, com_with_rep = process_comments(driver, art_id)
-
     # Flush après chaque article avec commentaires
     flush_comment_batch()
-
     print(f"    → {total_com} commentaires, {total_rep} réponses")
     return pdf_path, pdf_hash

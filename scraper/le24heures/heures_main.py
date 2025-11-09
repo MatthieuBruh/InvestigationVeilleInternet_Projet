@@ -4,7 +4,6 @@ from heures_comments import flush_comment_batch
 from scraper.dbConfig import close_connection
 
 URLS = {
-    # TODO : CHECK URL
     "monde": "https://www.24heures.ch/monde",
     "suisse": "https://www.24heures.ch/suisse"
 }
