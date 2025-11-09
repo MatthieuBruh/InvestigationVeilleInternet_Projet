@@ -11,14 +11,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from minutes_article import scrap_article, flush_article_batch
-from minutes_comments import flush_comment_batch
+from scraper.le20minutes.minutes_article import scrap_article, flush_article_batch
+from scraper.le20minutes.minutes_comments import flush_comment_batch
 from scraper.dbConfig import get_connection
 from scraper.utils import get_driver_requirements, accept_cookies_20min_matin, save_cookies
-
-
-# Configuration des URLs
-
 
 
 def scrape_articles_from_category(url, category):

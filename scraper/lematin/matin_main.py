@@ -1,6 +1,6 @@
-from matin_article import flush_article_batch
-from matin_category import scrap_categories
-from matin_comments import flush_comment_batch
+from scraper.lematin.matin_article import flush_article_batch
+from scraper.lematin.matin_category import scrap_categories
+from scraper.lematin.matin_comments import flush_comment_batch
 from scraper.dbConfig import close_connection
 
 URLS = {

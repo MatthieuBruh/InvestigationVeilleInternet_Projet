@@ -3,7 +3,7 @@ from datetime import datetime
 import requests
 from selenium.webdriver.common.by import By
 
-from matin_comments import scrap_comments
+from scraper.lematin.matin_comments import scrap_comments
 from scraper.dbConfig import get_connection
 from scraper.utils import normalize_date, load_cookies
 

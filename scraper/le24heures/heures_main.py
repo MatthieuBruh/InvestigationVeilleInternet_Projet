@@ -1,6 +1,6 @@
-from heures_article import flush_article_batch
-from heures_category import scrap_categories
-from heures_comments import flush_comment_batch
+from scraper.le24heures.heures_article import flush_article_batch
+from scraper.le24heures.heures_category import scrap_categories
+from scraper.le24heures.heures_comments import flush_comment_batch
 from scraper.dbConfig import close_connection
 
 URLS = {

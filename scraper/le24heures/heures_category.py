@@ -11,8 +11,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from heures_article import scrap_article, flush_article_batch
-from heures_comments import flush_comment_batch
+from scraper.le24heures.heures_article import scrap_article, flush_article_batch
+from scraper.le24heures.heures_comments import flush_comment_batch
 from scraper.dbConfig import get_connection
 from scraper.utils import get_driver_requirements, save_cookies, accept_cookies_24heures
 
