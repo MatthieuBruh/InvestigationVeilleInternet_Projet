@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS UNIL_Commentaire (
     com_contenu VARCHAR,
     com_art_id VARCHAR NOT NULL,
     com_commentaire_parent VARCHAR,
+    com_verif_haine_luca INT,
+    com_verif_haine_augustin INT,
+    com_verif_haine_matthieu INT,
+    com_verif_haine_severin INT,
     FOREIGN KEY (com_art_id) REFERENCES UNIL_Article(art_id),
     FOREIGN KEY (com_commentaire_parent) REFERENCES UNIL_Commentaire(com_id)
 );
