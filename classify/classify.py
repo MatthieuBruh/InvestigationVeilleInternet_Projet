@@ -14,6 +14,29 @@ import textwrap
 class CommentAnnotator:
     """Classe pour gérer l'annotation des commentaires"""
 
+    # Mapping des utilisateurs vers leurs colonnes dans la BDD
+    USER_COLUMNS = {
+        1: "com_verif_haine_augustin",
+        2: "com_verif_haine_luca",
+        3: "com_verif_haine_matthieu",
+        4: "com_verif_haine_severin"
+    }
+
+    USER_NAMES = {
+        1: "Augustin",
+        2: "Luca",
+        3: "Matthieu",
+        4: "Severin"
+    }
+
+    # Mapping pour la vérification croisée
+    CROSS_CHECK_PAIRS = {
+        1: 2,  # Augustin vérifie Luca
+        2: 1,  # Luca vérifie Augustin
+        3: 4,  # Matthieu vérifie Severin
+        4: 3  # Severin vérifie Matthieu
+    }
+
     SCALE_LEGEND = """
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║                    ÉCHELLE DE DISCOURS DE HAINE                           ║
@@ -59,6 +82,53 @@ class CommentAnnotator:
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
 
+    def save_annotation(self, com_id, user_id, score):
+        """
+        Sauvegarde une annotation dans la colonne appropriée du commentaire
+
+        Args:
+            com_id: ID du commentaire
+            user_id: ID de l'utilisateur (1-4)
+            score: Score de 1 à 6
+        """
+        column = self.USER_COLUMNS[user_id]
+
+        try:
+            query = f"""
+                UPDATE UNIL_Commentaire 
+                SET {column} = ?
+                WHERE com_id = ?
+            """
+            self.cursor.execute(query, (score, com_id))
+            self.conn.commit()
+        except Exception as e:
+            print(f"⚠️  Erreur lors de la sauvegarde: {e}")
+
+    def get_annotation(self, com_id, user_id):
+        """
+        Récupère l'annotation d'un utilisateur pour un commentaire
+
+        Args:
+            com_id: ID du commentaire
+            user_id: ID de l'utilisateur
+
+        Returns:
+            Score de l'annotation ou None
+        """
+        column = self.USER_COLUMNS[user_id]
+
+        query = f"""
+            SELECT {column}
+            FROM UNIL_Commentaire
+            WHERE com_id = ?
+        """
+        self.cursor.execute(query, (com_id,))
+        result = self.cursor.fetchone()
+
+        if result and result[0] is not None:
+            return result[0]
+        return None
+
     def get_articles_with_comments(self):
         """
         Récupère tous les articles qui ont des commentaires actifs, triés par ID
@@ -86,7 +156,6 @@ class CommentAnnotator:
         Returns:
             Liste de commentaires (parents seulement)
         """
-        # Récupérer tous les commentaires de l'article
         query = """
                 SELECT *
                 FROM UNIL_Commentaire
@@ -96,14 +165,11 @@ class CommentAnnotator:
         self.cursor.execute(query, (art_id,))
         all_comments = [dict(row) for row in self.cursor.fetchall()]
 
-        # Organiser en structure hiérarchique
         comments_dict = {c['com_id']: c for c in all_comments}
 
-        # Ajouter une liste d'enfants à chaque commentaire
         for comment in all_comments:
             comment['children'] = []
 
-        # Construire la hiérarchie
         root_comments = []
         for comment in all_comments:
             parent_id = comment['com_commentaire_parent']
@@ -129,7 +195,6 @@ class CommentAnnotator:
         if not text:
             return indent + "(vide)"
 
-        # Utiliser textwrap pour couper le texte proprement
         wrapper = textwrap.TextWrapper(
             width=width,
             initial_indent=indent,
@@ -148,7 +213,6 @@ class CommentAnnotator:
             level: Niveau d'indentation (0 pour commentaire parent)
             parent_comment: Commentaire parent (si c'est une réponse)
         """
-        # Si c'est une réponse (level > 0), afficher d'abord le commentaire parent
         if level > 0 and parent_comment:
             print(f"\n{'─' * 80}")
             print("📝 COMMENTAIRE PARENT (pour contexte):")
@@ -189,18 +253,29 @@ class CommentAnnotator:
             else:
                 print("❌ Entrée invalide. Utilisez 1-6, S ou Q.")
 
-    def annotate_comment_tree(self, comment, level=0, parent_comment=None):
+    def annotate_comment_tree(self, comment, user_id, level=0, parent_comment=None):
         """
         Annote un commentaire et ses réponses de manière récursive
 
         Args:
             comment: Commentaire à annoter
+            user_id: ID de l'utilisateur
             level: Niveau de profondeur dans l'arbre
-            parent_comment: Commentaire parent (pour afficher le contexte des réponses)
+            parent_comment: Commentaire parent
 
         Returns:
             bool: True pour continuer, False pour quitter
         """
+        # Vérifier si déjà annoté - si oui, passer automatiquement
+        existing_annotation = self.get_annotation(comment['com_id'], user_id)
+
+        if existing_annotation is not None:
+            # Déjà annoté, passer aux enfants directement
+            for child in comment.get('children', []):
+                if not self.annotate_comment_tree(child, user_id, level + 1, comment):
+                    return False
+            return True
+
         # Afficher le commentaire
         self.display_comment(comment, level, parent_comment)
 
@@ -208,23 +283,25 @@ class CommentAnnotator:
         annotation = self.get_user_annotation()
 
         if annotation == -1:
-            return False  # Quitter
+            return False
         elif annotation == 0:
             print("⏭️  Commentaire passé")
         else:
             print(f"✓ Annoté comme niveau {annotation}")
-            # TODO: Sauvegarder l'annotation dans une base de données ou un fichier
 
-        # Annoter les réponses (enfants) en passant le commentaire actuel comme parent
+            # Sauvegarder l'annotation
+            self.save_annotation(comment['com_id'], user_id, annotation)
+
+        # Annoter les réponses
         for child in comment.get('children', []):
-            if not self.annotate_comment_tree(child, level + 1, comment):
+            if not self.annotate_comment_tree(child, user_id, level + 1, comment):
                 return False
 
         return True
 
     def select_user(self):
         """
-        Demande à l'utilisateur de s'identifier parmi les 4 personnes
+        Demande à l'utilisateur de s'identifier
 
         Returns:
             int: Numéro de l'utilisateur (1-4)
@@ -232,22 +309,49 @@ class CommentAnnotator:
         print("\n" + "=" * 80)
         print(" SÉLECTION DE L'UTILISATEUR ".center(80, "="))
         print("=" * 80)
-        print("\nVeuillez vous identifier pour éviter les conflits d'annotation:\n")
-        print("  1 - Augustin")
-        print("  2 - Luca")
-        print("  3 - Matthieu")
-        print("  4 - Severin")
+        print("\nVeuillez vous identifier:\n")
+        for num, name in self.USER_NAMES.items():
+            print(f"  {num} - {name}")
 
         while True:
             response = input("\n>>> Qui êtes-vous? (1-4): ").strip()
 
             if response in ['1', '2', '3', '4']:
                 user_num = int(response)
-                user_name = f"Pers{user_num}"
-                print(f"\n✓ Connecté en tant que: {user_name}")
+                print(f"\n✓ Connecté en tant que: {self.USER_NAMES[user_num]}")
                 return user_num
             else:
                 print("❌ Entrée invalide. Veuillez choisir 1, 2, 3 ou 4.")
+
+    def select_mode(self, user_num):
+        """
+        Demande le mode: annotation de ses articles ou vérification croisée
+
+        Returns:
+            tuple: (mode, target_user_id) où mode='own' ou 'verify'
+        """
+        target_user_id = self.CROSS_CHECK_PAIRS[user_num]
+        target_name = self.USER_NAMES[target_user_id]
+
+        print("\n" + "=" * 80)
+        print(" SÉLECTION DU MODE ".center(80, "="))
+        print("=" * 80)
+        print("\nQue souhaitez-vous faire?\n")
+        print("  1 - Annoter mes articles assignés")
+        print(f"  2 - Vérification croisée (annoter les articles de {target_name})")
+
+        while True:
+            response = input("\n>>> Votre choix (1-2): ").strip()
+
+            if response == '1':
+                print("\n✓ Mode: Annotation de mes articles")
+                return 'own', user_num
+            elif response == '2':
+                print(f"\n✓ Mode: Vérification croisée des articles de {target_name}")
+                print(f"💡 Vous annotez dans VOTRE colonne ({self.USER_COLUMNS[user_num]})")
+                return 'verify', target_user_id
+            else:
+                print("❌ Entrée invalide. Veuillez choisir 1 ou 2.")
 
     def distribute_articles(self, articles, user_num):
         """
@@ -261,12 +365,9 @@ class CommentAnnotator:
             Liste des articles assignés à cet utilisateur
         """
         total = len(articles)
-
-        # Diviser en 4 groupes
         base_count = total // 4
         remainder = total % 4
 
-        # Calculer combien d'articles cet utilisateur doit avoir
         if user_num <= remainder:
             user_article_count = base_count + 1
             start_idx = (user_num - 1) * (base_count + 1)
@@ -283,7 +384,6 @@ class CommentAnnotator:
         print(f"\n📊 Total d'articles avec commentaires: {total}")
         print(f"📦 Articles par personne:")
 
-        # Afficher la distribution pour tous les utilisateurs
         for i in range(1, 5):
             if i <= remainder:
                 count = base_count + 1
@@ -296,11 +396,11 @@ class CommentAnnotator:
             marker = "👉 " if i == user_num else "   "
 
             if count > 0:
-                print(f"{marker}Pers{i}: {count} articles (#{s_idx + 1} à #{e_idx})")
+                print(f"{marker}{self.USER_NAMES[i]}: {count} articles (#{s_idx + 1} à #{e_idx})")
             else:
-                print(f"{marker}Pers{i}: {count} articles (aucun)")
+                print(f"{marker}{self.USER_NAMES[i]}: {count} articles (aucun)")
 
-        print(f"\n✓ Vous (Pers{user_num}): {len(user_articles)} articles assignés")
+        print(f"\n✓ Vous ({self.USER_NAMES[user_num]}): {len(user_articles)} articles assignés")
 
         if user_articles:
             print(f"   Premier article ID: {user_articles[0]['art_id']}")
@@ -309,6 +409,35 @@ class CommentAnnotator:
             print(f"   ⚠️  Aucun article à annoter pour vous.")
 
         return user_articles
+
+    def get_annotation_stats(self, user_id, articles):
+        """
+        Calcule les statistiques d'annotation pour un utilisateur sur ses articles
+
+        Args:
+            user_id: ID de l'utilisateur
+            articles: Liste des articles à vérifier
+
+        Returns:
+            tuple: (total_comments, annotated_comments)
+        """
+        column = self.USER_COLUMNS[user_id]
+        total = 0
+        annotated = 0
+
+        for article in articles:
+            query = f"""
+                SELECT COUNT(*) as total,
+                       SUM(CASE WHEN {column} IS NOT NULL THEN 1 ELSE 0 END) as annotated
+                FROM UNIL_Commentaire
+                WHERE com_art_id = ?
+            """
+            self.cursor.execute(query, (article['art_id'],))
+            result = self.cursor.fetchone()
+            total += result['total']
+            annotated += result['annotated']
+
+        return total, annotated
 
     def run(self):
         """
@@ -323,6 +452,9 @@ class CommentAnnotator:
             # Sélection de l'utilisateur
             user_num = self.select_user()
 
+            # Sélection du mode
+            mode, target_user_id = self.select_mode(user_num)
+
             # Récupérer tous les articles
             all_articles = self.get_articles_with_comments()
 
@@ -330,19 +462,26 @@ class CommentAnnotator:
                 print("\n❌ Aucun article avec commentaires trouvé.")
                 return
 
-            # Distribuer les articles
-            articles = self.distribute_articles(all_articles, user_num)
-
-            print(f"\n📊 Nombre d'articles à annoter: {len(articles)}")
+            # Distribuer les articles selon le mode
+            articles = self.distribute_articles(all_articles, target_user_id)
 
             if not articles:
-                print("❌ Aucun article assigné à annoter.")
+                print("❌ Aucun article assigné.")
                 return
 
-            # Parcourir chaque article assigné
+            # Afficher les statistiques
+            total_comments, annotated_comments = self.get_annotation_stats(user_num, articles)
+            print(f"\n📊 Progression: {annotated_comments}/{total_comments} commentaires annotés "
+                  f"({100 * annotated_comments // total_comments if total_comments > 0 else 0}%)")
+
+            # Parcourir chaque article
             for idx, article in enumerate(articles, 1):
                 print("\n" + "=" * 80)
-                print(f"VOTRE ARTICLE {idx}/{len(articles)}")
+                if mode == 'verify':
+                    print(f"VÉRIFICATION CROISÉE - ARTICLE {idx}/{len(articles)}")
+                    print(f"(Articles de {self.USER_NAMES[target_user_id]})")
+                else:
+                    print(f"VOTRE ARTICLE {idx}/{len(articles)}")
                 print("=" * 80)
                 print(f"📰 Titre: {article['art_titre']}")
                 print(f"🔗 URL: {article['art_url']}")
@@ -352,16 +491,14 @@ class CommentAnnotator:
                 if article['art_description']:
                     print(f"📝 Description: {article['art_description'][:200]}...")
 
-                # Récupérer les commentaires
                 comments = self.get_comments_for_article(article['art_id'])
                 print(f"\n💬 Nombre de commentaires principaux: {len(comments)}")
 
                 input("\n▶️  Appuyez sur Entrée pour commencer l'annotation de cet article...")
 
-                # Annoter chaque commentaire et ses réponses
                 should_continue = True
                 for comment in comments:
-                    if not self.annotate_comment_tree(comment):
+                    if not self.annotate_comment_tree(comment, user_num):
                         should_continue = False
                         break
 
@@ -375,6 +512,10 @@ class CommentAnnotator:
             print(" ANNOTATION TERMINÉE ".center(80, "="))
             print("=" * 80)
 
+            # Statistiques finales
+            total_comments, annotated_comments = self.get_annotation_stats(user_num, articles)
+            print(f"\n📊 Progression finale: {annotated_comments}/{total_comments} commentaires annotés")
+
         except KeyboardInterrupt:
             print("\n\n⚠️  Interruption par l'utilisateur (Ctrl+C)")
         finally:
@@ -384,7 +525,7 @@ class CommentAnnotator:
 
 def main():
     """Point d'entrée principal"""
-    db_path = "articles_20min.db"
+    db_path = "UNIL_IVI_GR4.db"
 
     if len(sys.argv) > 1:
         db_path = sys.argv[1]
