@@ -29,6 +29,14 @@ class CommentAnnotator:
         4: "Severin"
     }
 
+    # Fichiers de base de données par utilisateur
+    USER_DB_FILES = {
+        1: "UNIL_IVI_GR4_augustin.db",
+        2: "UNIL_IVI_GR4_luca.db",
+        3: "UNIL_IVI_GR4_matthieu.db",
+        4: "UNIL_IVI_GR4_severin.db"
+    }
+
     # Mapping pour la vérification croisée
     CROSS_CHECK_PAIRS = {
         1: 2,  # Augustin vérifie Luca
@@ -444,13 +452,19 @@ class CommentAnnotator:
         Lance l'application d'annotation
         """
         try:
-            print("=" * 80)
-            print(" APPLICATION D'ANNOTATION DE COMMENTAIRES ".center(80, "="))
-            print("=" * 80)
             print(self.SCALE_LEGEND)
 
-            # Sélection de l'utilisateur
-            user_num = self.select_user()
+            # L'utilisateur a déjà été sélectionné dans main()
+            # On récupère l'ID depuis le nom du fichier
+            user_num = None
+            for uid, dbfile in self.USER_DB_FILES.items():
+                if str(self.db_path).endswith(dbfile):
+                    user_num = uid
+                    break
+
+            if user_num is None:
+                # Fallback: demander l'utilisateur
+                user_num = self.select_user()
 
             # Sélection du mode
             mode, target_user_id = self.select_mode(user_num)
@@ -525,18 +539,47 @@ class CommentAnnotator:
 
 def main():
     """Point d'entrée principal"""
-    db_path = "UNIL_IVI_GR4.db"
+    print("=" * 80)
+    print(" APPLICATION D'ANNOTATION DE COMMENTAIRES ".center(80, "="))
+    print("=" * 80)
+    print("\nVeuillez vous identifier:\n")
 
-    if len(sys.argv) > 1:
-        db_path = sys.argv[1]
+    user_names = {
+        1: "Augustin",
+        2: "Luca",
+        3: "Matthieu",
+        4: "Severin"
+    }
+
+    user_db_files = {
+        1: "UNIL_IVI_GR4_augustin.db",
+        2: "UNIL_IVI_GR4_luca.db",
+        3: "UNIL_IVI_GR4_matthieu.db",
+        4: "UNIL_IVI_GR4_severin.db"
+    }
+
+    for num, name in user_names.items():
+        print(f"  {num} - {name}")
+
+    # Sélection de l'utilisateur
+    while True:
+        response = input("\n>>> Qui êtes-vous? (1-4): ").strip()
+
+        if response in ['1', '2', '3', '4']:
+            user_id = int(response)
+            db_path = user_db_files[user_id]
+            print(f"\n✓ Connecté en tant que: {user_names[user_id]}")
+            print(f"📁 Base de données: {db_path}")
+            break
+        else:
+            print("❌ Entrée invalide. Veuillez choisir 1, 2, 3 ou 4.")
 
     try:
         annotator = CommentAnnotator(db_path)
         annotator.run()
     except FileNotFoundError as e:
         print(f"❌ Erreur: {e}")
-        print(f"\n💡 Usage: python {sys.argv[0]} [chemin_base_de_données]")
-        print(f"   Par défaut: {db_path}")
+        print(f"\n💡 Assurez-vous que le fichier {db_path} existe dans le dossier actuel.")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Erreur inattendue: {e}")
