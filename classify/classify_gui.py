@@ -46,6 +46,7 @@ class CommentAnnotatorGUI:
     }
 
     SCALE_INFO = {
+        0: ("No hate", "Pas de haine", "#FFFFFF"),
         1: ("Disagreement", "Désaccord au niveau des idées/croyances", "#90EE90"),
         2: ("Negative Actions", "Actions négatives non-violentes", "#FFFFE0"),
         3: ("Negative Character", "Caractérisations et insultes non-violentes", "#FFD700"),
@@ -246,6 +247,12 @@ class CommentAnnotatorGUI:
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde: {e}")
 
+    def open_article_url(self, event):
+        """Ouvre l'URL de l'article dans le navigateur"""
+        import webbrowser
+        if self.current_url:
+            webbrowser.open(self.current_url)
+
     def show_annotation_interface(self):
         """Affiche l'interface principale d'annotation"""
         # Frame principal
@@ -260,8 +267,19 @@ class CommentAnnotatorGUI:
                                       wraplength=850, justify=tk.LEFT, anchor="w")
         self.article_label.pack(padx=10, pady=5, fill=tk.X)
 
+        # Label pour le lien de l'article (cliquable)
+        self.url_label = tk.Label(info_frame, text="", font=("Arial", 9, "underline"),
+                                  fg="blue", cursor="hand2")
+        self.url_label.pack(padx=10, pady=2, anchor="w")
+        self.url_label.bind("<Button-1>", self.open_article_url)
+        self.current_url = ""
+
         self.progress_label = tk.Label(info_frame, text="", font=("Arial", 9))
         self.progress_label.pack(padx=10, pady=5)
+
+        self.global_stats_label = tk.Label(info_frame, text="", font=("Arial", 9, "italic"),
+                                           fg="blue")
+        self.global_stats_label.pack(padx=10, pady=5)
 
         # Frame du milieu - Commentaire
         comment_frame = tk.Frame(main_frame, relief=tk.SUNKEN, borderwidth=2)
@@ -280,13 +298,26 @@ class CommentAnnotatorGUI:
         tk.Label(buttons_frame, text="Niveau de discours de haine:",
                  font=("Arial", 11, "bold")).pack(pady=5)
 
-        # Créer les boutons 1-6
-        score_frame = tk.Frame(buttons_frame)
-        score_frame.pack(pady=5)
+        # Créer les boutons 0-6 sur deux lignes
+        # Première ligne: 0 (No hate)
+        score_frame_top = tk.Frame(buttons_frame)
+        score_frame_top.pack(pady=5)
+
+        # Bouton 0 centré
+        name, desc, color = self.SCALE_INFO[0]
+        btn0 = tk.Button(score_frame_top, text=f"{0}\n{name}",
+                         font=("Arial", 9, "bold"), width=15, height=3,
+                         bg=color, fg="black",
+                         command=lambda: self.annotate(0))
+        btn0.pack()
+
+        # Deuxième ligne: 1-6
+        score_frame_bottom = tk.Frame(buttons_frame)
+        score_frame_bottom.pack(pady=5)
 
         for score in range(1, 7):
             name, desc, color = self.SCALE_INFO[score]
-            btn = tk.Button(score_frame, text=f"{score}\n{name}",
+            btn = tk.Button(score_frame_bottom, text=f"{score}\n{name}",
                             font=("Arial", 9), width=12, height=3,
                             bg=color if color != "#000000" else "#333333",
                             fg="white" if color == "#000000" else "black",
@@ -342,6 +373,14 @@ class CommentAnnotatorGUI:
             info_text += f"📝 {description}"
 
         self.article_label.config(text=info_text)
+
+        # Afficher l'URL cliquable
+        if article['art_url']:
+            self.current_url = article['art_url']
+            self.url_label.config(text=f"🔗 {article['art_url']}")
+        else:
+            self.current_url = ""
+            self.url_label.config(text="")
 
         total_in_article = len(self.current_comments)
         progress_text = f"💬 Commentaire {self.current_comment_idx + 1}/{total_in_article} de cet article"
