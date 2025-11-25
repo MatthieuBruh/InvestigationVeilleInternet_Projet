@@ -257,8 +257,8 @@ class CommentAnnotatorGUI:
         info_frame.pack(fill=tk.X, pady=(0, 10))
 
         self.article_label = tk.Label(info_frame, text="", font=("Arial", 10, "bold"),
-                                      wraplength=850, justify=tk.LEFT)
-        self.article_label.pack(padx=10, pady=5)
+                                      wraplength=850, justify=tk.LEFT, anchor="w")
+        self.article_label.pack(padx=10, pady=5, fill=tk.X)
 
         self.progress_label = tk.Label(info_frame, text="", font=("Arial", 9))
         self.progress_label.pack(padx=10, pady=5)
@@ -331,7 +331,15 @@ class CommentAnnotatorGUI:
         mode_text = "VÉRIFICATION CROISÉE" if self.mode == 'verify' else "VOS ARTICLES"
         info_text = f"{mode_text} - Article {self.current_article_idx + 1}/{len(self.articles)}\n"
         info_text += f"📰 {article['art_titre']}\n"
-        info_text += f"📂 {article['art_categorie']} | 📅 {article['art_date']}"
+        info_text += f"📂 {article['art_categorie']} | 📅 {article['art_date']}\n"
+
+        # Ajouter la description si elle existe
+        if article['art_description'] and article['art_description'].strip():
+            # Limiter la longueur de la description pour l'affichage
+            description = article['art_description']
+            if len(description) > 200:
+                description = description[:200] + "..."
+            info_text += f"📝 {description}"
 
         self.article_label.config(text=info_text)
 
