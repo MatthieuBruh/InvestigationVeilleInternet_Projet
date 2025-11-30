@@ -287,7 +287,7 @@ class CommentAnnotatorGUI:
 
         # Zone de texte pour le commentaire avec scrollbar
         self.comment_text = scrolledtext.ScrolledText(comment_frame, wrap=tk.WORD,
-                                                      font=("Arial", 11), height=15)
+                                                      font=("Arial", 14), height=15)
         self.comment_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.comment_text.config(state=tk.DISABLED)
 
