@@ -1,0 +1,105 @@
+######################################################################
+# 🚀 ANALYSE DE TOXICITÉ DES COMMENTAIRES - DETOXIFY
+######################################################################
+📁 Base de données: UNIL_IVI_GR4_LLM.db
+
+
+======================================================================
+📊 STATISTIQUES GLOBALES
+======================================================================
+Total de commentaires analysés: 11,808
+
+🎯 Classification (seuil >= 0.5):
+   🔴 Toxiques: 620 (5.3%)
+   🟢 Non toxiques: 11,188 (94.7%)
+
+📈 Scores moyens (0.000 à 1.000):
+   ☠️ is_haine (= toxicité)    : 0.074 [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   ☠️ Toxicité générale        : 0.074 [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   💀 Toxicité sévère          : 0.000 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   🤬 Obscénité                : 0.006 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   ⚔️ Menace                   : 0.003 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   😠 Insulte                  : 0.046 [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+   👥 Attaque identitaire      : 0.004 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+======================================================================
+
+
+======================================================================
+📊 RÉPARTITION PAR CATÉGORIE (score >= 0.5)
+======================================================================
+☠️  Toxicité générale    :   620 (  5.3%) [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+💀 Toxicité sévère        :     0 (  0.0%) [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+🤬 Obscénité              :    23 (  0.2%) [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+⚔️  Menace               :     9 (  0.1%) [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+😠 Insulte                :   364 (  3.1%) [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+👥 Attaque identitaire    :    20 (  0.2%) [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+======================================================================
+
+
+================================================================================
+🔴 TOP 5 COMMENTAIRES LES PLUS TOXIQUES
+================================================================================
+
+🔴 #1 - ID: 1fc1082c4973993441e110352bd439eb
+   Score is_haine: 0.995
+   Détails: Sévère=0.001 | Menace=0.002 | Insulte=0.991 | Identité=0.002
+   Contenu: Pourquoi pas tous dans l’avion ?il faut l’amortir ils ont peur du crash ou seulement le roi y a droit ? Stupide vraiment stupide!,,!!!🤔🤔🤔
+
+🔴 #2 - ID: ad43b5d36c20ef8e5719740bc5d0ff5f
+   Score is_haine: 0.992
+   Détails: Sévère=0.001 | Menace=0.001 | Insulte=0.867 | Identité=0.003
+   Contenu: @Taguenet L’extrême-gauchiste qui défend les frappeurs d’enfant et te parle ensuite d’idioties, cocasse.
+
+🔴 #3 - ID: f187dd80b04b45092c4701a47d365ddd
+   Score is_haine: 0.990
+   Détails: Sévère=0.000 | Menace=0.001 | Insulte=0.986 | Identité=0.001
+   Contenu: Quel clown et en plus il se pavane.
+
+🔴 #4 - ID: 7baec884ecb56a643ea03cdf991b8eee
+   Score is_haine: 0.990
+   Détails: Sévère=0.000 | Menace=0.001 | Insulte=0.984 | Identité=0.001
+   Contenu: Le Conseil Fédéral est juste un tas de fourbes et menteurs!
+
+🔴 #5 - ID: 5d0e68be3d4636438c15834b93fbdedc
+   Score is_haine: 0.990
+   Détails: Sévère=0.000 | Menace=0.001 | Insulte=0.986 | Identité=0.001
+   Contenu: Pauvres bêtes qui subissent encore la stupidité humaine et qui en paient les frais. Pourquoi avoir autant attendu ? Ici certains critiquent la France,...
+
+
+================================================================================
+🔴 EXEMPLES DE COMMENTAIRES TOXIQUES (score >= 0.5)
+================================================================================
+
+🔴 Exemple 1 - ID: b8a371b83b079c0bf2109dbb2fbfec67
+   is_haine: 0.822 | Insulte: 0.716 | Menace: 0.001
+   Contenu: Le comble de la bêtise politique…
+
+🔴 Exemple 2 - ID: 395a6a51f7d753e21ecaf68985615748
+   is_haine: 0.842 | Insulte: 0.777 | Menace: 0.001
+   Contenu: Même si on interdit la bêtise humaine il restera toujours l’humain.
+
+🔴 Exemple 3 - ID: 89ba7c7940d69a9c709af9cc3884c410
+   is_haine: 0.701 | Insulte: 0.596 | Menace: 0.001
+   Contenu: Article à épingler dans le bêtisier.
+
+
+================================================================================
+🟢 EXEMPLES DE COMMENTAIRES NON TOXIQUES (score < 0.5)
+================================================================================
+
+🟢 Exemple 1 - ID: 3cdcefa701743ca60d29891d5295ef57
+   is_haine: 0.002 | Insulte: 0.001 | Menace: 0.000
+   Contenu: C'est bien d'interdire les trottinettes. Mais ce n'est vraiment que le début du commencement. La Belgique va très mal et, à l'inverse, le trafic de drogue s'y trouve confortablement installé.
+
+🟢 Exemple 2 - ID: 7fcd62d63096f4ed47534c02560c3474
+   is_haine: 0.062 | Insulte: 0.042 | Menace: 0.000
+   Contenu: Ou un patent aveux d’impuissance face à la voyoucratie rampante….
+
+🟢 Exemple 3 - ID: 2479fe17322e9af7c926d0748e0b35a3
+   is_haine: 0.005 | Insulte: 0.001 | Menace: 0.000
+   Contenu: Faut interdire les baskets aussi, parce que la plupart des dealers prennent la fuite en courant.
+
+
+======================================================================
+✅ Analyse terminée avec succès!
+======================================================================
